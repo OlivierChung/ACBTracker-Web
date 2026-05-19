@@ -63,11 +63,38 @@ React + Vite + TypeScript SPA that consumes the ACBTracker API (`OlivierChung/AC
 3. Axios interceptor reads `token` from the store on every request
 4. On 401, interceptor calls `logout()` and redirects to `/login`
 
-## Git workflow
+## Git workflow — non-negotiable
 
-- Never commit directly to `main`; always use `feature/<kebab-case>` or `fix/<kebab-case>` branches
-- Wait for user to review and merge PRs
-- Run `npx tsc --noEmit` and `npm run lint` before opening a PR
+**Never commit directly to `master`.** All work goes on a feature branch.
+
+```bash
+git checkout master && git pull
+git checkout -b feature/<short-description>   # e.g. feature/profile-page
+
+# When done — run the pre-PR checklist below, then:
+git push -u origin feature/<short-description>
+gh pr create --repo OlivierChung/ACBTracker-Web ...
+# Wait for the user to merge — never merge yourself unless explicitly told to
+```
+
+- Branch names: `feature/<kebab-case>` for new work, `fix/<kebab-case>` for bug fixes
+- One logical change per branch
+- Always include the co-author trailer:
+  ```
+  Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+  ```
+
+## Pre-PR checklist
+
+Both steps must pass before `gh pr create`:
+
+```bash
+# 1. Type-check
+npx tsc --noEmit
+
+# 2. Lint
+npm run lint
+```
 
 ## Proxy
 
