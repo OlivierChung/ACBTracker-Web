@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useConfirm } from '../components/ConfirmDialog'
 import {
@@ -17,6 +17,15 @@ import type { Security } from '../types'
 
 type PriceMode = 'perShare' | 'total'
 type InputCurrency = 'native' | 'cad'
+
+function nextBusinessDay(dateStr: string): string {
+  const d = new Date(dateStr + 'T00:00:00')
+  d.setDate(d.getDate() + 1)
+  const day = d.getDay()
+  if (day === 6) d.setDate(d.getDate() + 2) // Sat → Mon
+  if (day === 0) d.setDate(d.getDate() + 1) // Sun → Mon
+  return d.toISOString().slice(0, 10)
+}
 
 const TX_TYPE_LABELS: Record<TransactionType, string> = {
   [TransactionType.Buy]: 'Buy',
@@ -73,6 +82,11 @@ export function AccountPage() {
   const { data: fx } = useExchangeRate(currency, tradeDate, !!tradeDate && currency !== 'CAD')
 
   if (fx && currency !== 'CAD') setValue('exchangeRate', String(fx.rate))
+
+  useEffect(() => {
+    if (editingTransaction || !tradeDate) return
+    setValue('settlementDate', nextBusinessDay(tradeDate))
+  }, [tradeDate, editingTransaction, setValue])
 
   const effectivePps = useMemo(() => {
     const pps = Number(priceInput)
