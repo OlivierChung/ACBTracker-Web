@@ -1,8 +1,15 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { useHoldings, useTransactions, useDeleteTransaction, useAddTransaction } from '../hooks/useTransactions'
+import {
+  useHoldings,
+  useTransactions,
+  useDeleteTransaction,
+  useAddTransaction,
+  useUpdateTransaction,
+} from '../hooks/useTransactions'
 import { useExchangeRate } from '../hooks/useExchangeRate'
 import { TransactionType } from '../types'
+import type { Transaction } from '../types'
 import { useForm, useWatch } from 'react-hook-form'
 import { api } from '../lib/api'
 import type { Security } from '../types'
@@ -40,8 +47,10 @@ export function AccountPage() {
   const { data: transactions, isLoading: txLoading } = useTransactions(accountId!)
   const deleteTransaction = useDeleteTransaction()
   const addTransaction = useAddTransaction()
+  const updateTransaction = useUpdateTransaction()
 
   const [showForm, setShowForm] = useState(false)
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
   const [securityResults, setSecurityResults] = useState<Security[]>([])
   const [selectedSecurity, setSelectedSecurity] = useState<Security | null>(null)
 
@@ -53,7 +62,6 @@ export function AccountPage() {
   const currency = selectedSecurity?.currency ?? 'CAD'
   const { data: fx } = useExchangeRate(currency, tradeDate, !!tradeDate && currency !== 'CAD')
 
-  // Auto-fill exchange rate when fx loads
   if (fx && currency !== 'CAD') setValue('exchangeRate', String(fx.rate))
 
   async function searchSecurities(q: string) {
@@ -70,23 +78,70 @@ export function AccountPage() {
     setSecurityResults([])
   }
 
-  async function onSubmit(values: TxFormValues) {
-    await addTransaction.mutateAsync({
-      accountId: accountId!,
-      securityId: values.securityId,
-      type: Number(values.type) as TransactionType,
-      tradeDate: values.tradeDate,
-      settlementDate: values.settlementDate,
-      shares: Number(values.shares),
-      pricePerShare: Number(values.pricePerShare),
-      fees: Number(values.fees) || 0,
-      exchangeRate: Number(values.exchangeRate),
-      notes: values.notes || undefined,
-    })
-    reset({ exchangeRate: '1', type: '0' })
+  function openAddForm() {
+    setEditingTransaction(null)
     setSelectedSecurity(null)
-    setShowForm(false)
+    reset({ exchangeRate: '1', type: '0' })
+    setShowForm(true)
   }
+
+  function openEditForm(t: Transaction) {
+    setEditingTransaction(t)
+    setSelectedSecurity(null)
+    reset({
+      securitySearch: t.ticker ?? t.securityId,
+      securityId: t.securityId,
+      type: String(t.type),
+      tradeDate: t.tradeDate,
+      settlementDate: t.settlementDate,
+      shares: String(t.shares),
+      pricePerShare: String(t.pricePerShare),
+      fees: String(t.fees),
+      exchangeRate: String(t.exchangeRate),
+      notes: t.notes ?? '',
+    })
+    setShowForm(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  function closeForm() {
+    setShowForm(false)
+    setEditingTransaction(null)
+    setSelectedSecurity(null)
+    reset({ exchangeRate: '1', type: '0' })
+  }
+
+  async function onSubmit(values: TxFormValues) {
+    if (editingTransaction) {
+      await updateTransaction.mutateAsync({
+        accountId: accountId!,
+        transactionId: editingTransaction.id,
+        tradeDate: values.tradeDate,
+        settlementDate: values.settlementDate,
+        shares: Number(values.shares),
+        pricePerShare: Number(values.pricePerShare),
+        fees: Number(values.fees) || 0,
+        exchangeRate: Number(values.exchangeRate),
+        notes: values.notes || undefined,
+      })
+    } else {
+      await addTransaction.mutateAsync({
+        accountId: accountId!,
+        securityId: values.securityId,
+        type: Number(values.type) as TransactionType,
+        tradeDate: values.tradeDate,
+        settlementDate: values.settlementDate,
+        shares: Number(values.shares),
+        pricePerShare: Number(values.pricePerShare),
+        fees: Number(values.fees) || 0,
+        exchangeRate: Number(values.exchangeRate),
+        notes: values.notes || undefined,
+      })
+    }
+    closeForm()
+  }
+
+  const isPending = addTransaction.isPending || updateTransaction.isPending
 
   return (
     <div>
@@ -101,7 +156,7 @@ export function AccountPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold text-gray-900">Holdings</h1>
         <button
-          onClick={() => setShowForm((v) => !v)}
+          onClick={openAddForm}
           className="bg-blue-600 text-white rounded-md px-4 py-2 text-sm font-medium hover:bg-blue-700 cursor-pointer"
         >
           Add transaction
@@ -143,47 +198,65 @@ export function AccountPage() {
         </div>
       )}
 
-      {/* Add transaction form */}
+      {/* Add / Edit transaction form */}
       {showForm && (
         <div className="bg-white border border-gray-200 rounded-lg p-6 mb-8">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">New transaction</h2>
+          <h2 className="text-lg font-medium text-gray-900 mb-4">
+            {editingTransaction ? 'Edit transaction' : 'New transaction'}
+          </h2>
           <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-3 gap-4">
             <div className="col-span-3 relative">
               <label className="block text-sm font-medium text-gray-700 mb-1">Security</label>
-              <input
-                {...register('securitySearch')}
-                placeholder="Search by ticker or name…"
-                onChange={(e) => searchSecurities(e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <input {...register('securityId')} type="hidden" />
-              {securityResults.length > 0 && (
-                <ul className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg">
-                  {securityResults.map((s) => (
-                    <li
-                      key={s.id}
-                      onClick={() => selectSecurity(s)}
-                      className="px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer"
-                    >
-                      <span className="font-medium">{s.ticker}</span>
-                      <span className="text-gray-500 ml-2">{s.name}</span>
-                      <span className="text-gray-400 ml-2 text-xs">{s.currency}</span>
-                    </li>
-                  ))}
-                </ul>
+              {editingTransaction ? (
+                <div className="w-full border border-gray-200 bg-gray-50 rounded-md px-3 py-2 text-sm text-gray-500">
+                  {editingTransaction.ticker ?? editingTransaction.securityId}
+                  <span className="ml-2 text-xs text-gray-400">(cannot be changed)</span>
+                </div>
+              ) : (
+                <>
+                  <input
+                    {...register('securitySearch')}
+                    placeholder="Search by ticker or name…"
+                    onChange={(e) => searchSecurities(e.target.value)}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <input {...register('securityId')} type="hidden" />
+                  {securityResults.length > 0 && (
+                    <ul className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg">
+                      {securityResults.map((s) => (
+                        <li
+                          key={s.id}
+                          onClick={() => selectSecurity(s)}
+                          className="px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer"
+                        >
+                          <span className="font-medium">{s.ticker}</span>
+                          <span className="text-gray-500 ml-2">{s.name}</span>
+                          <span className="text-gray-400 ml-2 text-xs">{s.currency}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </>
               )}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-              <select
-                {...register('type')}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {Object.entries(TX_TYPE_LABELS).map(([val, label]) => (
-                  <option key={val} value={val}>{label}</option>
-                ))}
-              </select>
+              {editingTransaction ? (
+                <div className="w-full border border-gray-200 bg-gray-50 rounded-md px-3 py-2 text-sm text-gray-500">
+                  {TX_TYPE_LABELS[editingTransaction.type]}
+                  <span className="ml-2 text-xs text-gray-400">(cannot be changed)</span>
+                </div>
+              ) : (
+                <select
+                  {...register('type')}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {Object.entries(TX_TYPE_LABELS).map(([val, label]) => (
+                    <option key={val} value={val}>{label}</option>
+                  ))}
+                </select>
+              )}
             </div>
 
             <div>
@@ -262,13 +335,20 @@ export function AccountPage() {
               />
             </div>
 
-            <div className="col-span-3 flex justify-end">
+            <div className="col-span-3 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={closeForm}
+                className="border border-gray-300 text-gray-700 rounded-md px-4 py-2 text-sm font-medium hover:bg-gray-50 cursor-pointer"
+              >
+                Cancel
+              </button>
               <button
                 type="submit"
-                disabled={addTransaction.isPending}
+                disabled={isPending}
                 className="bg-blue-600 text-white rounded-md px-4 py-2 text-sm font-medium hover:bg-blue-700 disabled:opacity-50 cursor-pointer"
               >
-                {addTransaction.isPending ? 'Saving…' : 'Save transaction'}
+                {isPending ? 'Saving…' : editingTransaction ? 'Save changes' : 'Save transaction'}
               </button>
             </div>
           </form>
@@ -303,7 +383,10 @@ export function AccountPage() {
                 </tr>
               )}
               {transactions?.map((t) => (
-                <tr key={t.id} className="hover:bg-gray-50">
+                <tr
+                  key={t.id}
+                  className={`hover:bg-gray-50 ${editingTransaction?.id === t.id ? 'bg-blue-50' : ''}`}
+                >
                   <td className="px-4 py-3 text-gray-700">{t.tradeDate}</td>
                   <td className="px-4 py-3 text-gray-700">{TX_TYPE_LABELS[t.type]}</td>
                   <td className="px-4 py-3 text-right text-gray-700">{NUM.format(t.shares)}</td>
@@ -314,12 +397,20 @@ export function AccountPage() {
                     {t.realizedGainLossCAD !== null ? CAD.format(t.realizedGainLossCAD) : '—'}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <button
-                      onClick={() => deleteTransaction.mutate({ accountId: accountId!, transactionId: t.id })}
-                      className="text-red-500 hover:text-red-700 text-xs cursor-pointer"
-                    >
-                      Delete
-                    </button>
+                    <div className="flex justify-end gap-3">
+                      <button
+                        onClick={() => openEditForm(t)}
+                        className="text-blue-500 hover:text-blue-700 text-xs cursor-pointer"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => deleteTransaction.mutate({ accountId: accountId!, transactionId: t.id })}
+                        className="text-red-500 hover:text-red-700 text-xs cursor-pointer"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

@@ -46,6 +46,28 @@ export function useAddTransaction() {
   })
 }
 
+export function useUpdateTransaction() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: {
+      accountId: string
+      transactionId: string
+      tradeDate: string
+      settlementDate: string
+      shares: number
+      pricePerShare: number
+      fees: number
+      exchangeRate: number
+      notes?: string
+    }) =>
+      api.put(`/accounts/${data.accountId}/transactions/${data.transactionId}`, data),
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: keys.transactions(vars.accountId) })
+      qc.invalidateQueries({ queryKey: keys.holdings(vars.accountId) })
+    },
+  })
+}
+
 export function useDeleteTransaction() {
   const qc = useQueryClient()
   return useMutation({
