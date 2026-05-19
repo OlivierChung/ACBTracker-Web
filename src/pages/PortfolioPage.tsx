@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form'
 import { usePortfolio } from '../hooks/usePortfolios'
 import { useCreateAccount, useDeleteAccount } from '../hooks/useAccounts'
 import { AccountType } from '../types'
+import { useConfirm } from '../components/ConfirmDialog'
 
 const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
   [AccountType.Taxable]: 'Taxable',
@@ -19,6 +20,7 @@ export function PortfolioPage() {
   const { data: portfolio, isLoading } = usePortfolio(portfolioId!)
   const createAccount = useCreateAccount()
   const deleteAccount = useDeleteAccount()
+  const { confirm, dialog } = useConfirm()
   const [showForm, setShowForm] = useState(false)
   const { register, handleSubmit, reset } = useForm<{
     name: string
@@ -143,7 +145,7 @@ export function PortfolioPage() {
               <p className="text-sm text-gray-500">{ACCOUNT_TYPE_LABELS[a.type]}</p>
             </div>
             <button
-              onClick={() => { if (confirm(`Delete account "${a.name}"? This cannot be undone.`)) deleteAccount.mutate({ portfolioId: portfolioId!, accountId: a.id }) }}
+              onClick={async () => { if (await confirm({ title: 'Delete account', message: `"${a.name}" will be permanently deleted along with all its transactions.` })) deleteAccount.mutate({ portfolioId: portfolioId!, accountId: a.id }) }}
               className="text-sm text-red-500 hover:text-red-700 cursor-pointer"
             >
               Delete
@@ -151,6 +153,7 @@ export function PortfolioPage() {
           </div>
         ))}
       </div>
+      {dialog}
     </div>
   )
 }

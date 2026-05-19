@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form'
 import { useSecurities, useCreateSecurity, useUpdateSecurity, useDeleteSecurity } from '../hooks/useSecurities'
 import { SecurityType } from '../types'
 import type { Security } from '../types'
+import { useConfirm } from '../components/ConfirmDialog'
 
 const SECURITY_TYPE_LABELS: Record<SecurityType, string> = {
   [SecurityType.Stock]: 'Stock',
@@ -107,6 +108,7 @@ export function SecuritiesPage() {
   const { data: securities, isLoading } = useSecurities()
   const createSecurity = useCreateSecurity()
   const deleteSecurity = useDeleteSecurity()
+  const { confirm, dialog } = useConfirm()
 
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -262,9 +264,7 @@ export function SecuritiesPage() {
                           Edit
                         </button>
                         <button
-                          onClick={() => {
-                            if (confirm(`Delete ${s.ticker}?`)) deleteSecurity.mutate(s.id)
-                          }}
+                          onClick={async () => { if (await confirm({ title: 'Delete security', message: `${s.ticker} — ${s.name} will be permanently deleted.` })) deleteSecurity.mutate(s.id) }}
                           className="text-red-500 hover:text-red-700 text-xs cursor-pointer"
                         >
                           Delete
@@ -278,6 +278,7 @@ export function SecuritiesPage() {
           </table>
         </div>
       )}
+      {dialog}
     </div>
   )
 }
