@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import { useAuthStore } from '../store/authStore'
+import { Logo, LogoMark } from '../components/Logo'
 
 const schema = z.object({
   email: z.string().email('Invalid email'),
@@ -72,7 +73,7 @@ export function LoginPage() {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Nav */}
       <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-        <span className="text-lg font-semibold text-gray-900">ACBTracker</span>
+        <Logo size={28} />
         <Link
           to="/register"
           className="text-sm text-blue-600 font-medium hover:text-blue-700"
@@ -84,6 +85,9 @@ export function LoginPage() {
       <main className="flex-1">
         {/* Hero */}
         <section className="bg-white border-b border-gray-200 py-16 px-6 text-center">
+          <div className="flex justify-center mb-6">
+            <LogoMark size={64} />
+          </div>
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
             Track your adjusted cost base,<br className="hidden sm:block" /> effortlessly
           </h1>
