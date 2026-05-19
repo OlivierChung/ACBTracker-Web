@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { useConfirm } from '../components/ConfirmDialog'
 import {
   useHoldings,
   useTransactions,
@@ -52,6 +53,7 @@ export function AccountPage() {
   const addTransaction = useAddTransaction()
   const updateTransaction = useUpdateTransaction()
 
+  const { confirm, dialog } = useConfirm()
   const [showForm, setShowForm] = useState(false)
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
   const [securityResults, setSecurityResults] = useState<Security[]>([])
@@ -488,7 +490,7 @@ export function AccountPage() {
                         Edit
                       </button>
                       <button
-                        onClick={() => { if (confirm(`Delete ${TX_TYPE_LABELS[t.type]} transaction for ${t.ticker ?? 'this security'} on ${t.tradeDate}? This cannot be undone.`)) deleteTransaction.mutate({ accountId: accountId!, transactionId: t.id }) }}
+                        onClick={async () => { if (await confirm({ title: 'Delete transaction', message: `Delete ${TX_TYPE_LABELS[t.type]} of ${t.ticker ?? 'this security'} on ${t.tradeDate}? ACB will be recalculated. This cannot be undone.` })) deleteTransaction.mutate({ accountId: accountId!, transactionId: t.id }) }}
                         className="text-red-500 hover:text-red-700 text-xs cursor-pointer"
                       >
                         Delete
@@ -501,6 +503,7 @@ export function AccountPage() {
           </table>
         </div>
       )}
+      {dialog}
     </div>
   )
 }

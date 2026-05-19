@@ -9,6 +9,7 @@ import {
   useSetDefaultPortfolio,
 } from '../hooks/usePortfolios'
 import { TransactionType } from '../types'
+import { useConfirm } from '../components/ConfirmDialog'
 
 const txTypeLabel: Record<number, string> = {
   [TransactionType.Buy]: 'Buy',
@@ -26,6 +27,7 @@ export function PortfoliosPage() {
   const createPortfolio = useCreatePortfolio()
   const deletePortfolio = useDeletePortfolio()
   const setDefault = useSetDefaultPortfolio()
+  const { confirm, dialog } = useConfirm()
   const [showForm, setShowForm] = useState(false)
   const { register, handleSubmit, reset } = useForm<{ name: string; description: string }>()
 
@@ -117,7 +119,7 @@ export function PortfoliosPage() {
                 {p.isDefault ? 'Remove default' : 'Set as default'}
               </button>
               <button
-                onClick={() => { if (confirm(`Delete portfolio "${p.name}"? This cannot be undone.`)) deletePortfolio.mutate(p.id) }}
+                onClick={async () => { if (await confirm({ title: 'Delete portfolio', message: `"${p.name}" will be permanently deleted along with all its accounts and transactions.` })) deletePortfolio.mutate(p.id) }}
                 className="text-sm text-red-500 hover:text-red-700 cursor-pointer"
               >
                 Delete
@@ -216,6 +218,7 @@ export function PortfoliosPage() {
           </section>
         </div>
       )}
+      {dialog}
     </div>
   )
 }
