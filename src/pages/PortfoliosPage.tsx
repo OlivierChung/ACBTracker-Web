@@ -117,7 +117,7 @@ export function PortfoliosPage() {
                 {p.isDefault ? 'Remove default' : 'Set as default'}
               </button>
               <button
-                onClick={() => deletePortfolio.mutate(p.id)}
+                onClick={() => { if (confirm(`Delete portfolio "${p.name}"? This cannot be undone.`)) deletePortfolio.mutate(p.id) }}
                 className="text-sm text-red-500 hover:text-red-700 cursor-pointer"
               >
                 Delete

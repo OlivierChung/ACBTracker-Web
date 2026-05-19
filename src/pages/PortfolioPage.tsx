@@ -143,7 +143,7 @@ export function PortfolioPage() {
               <p className="text-sm text-gray-500">{ACCOUNT_TYPE_LABELS[a.type]}</p>
             </div>
             <button
-              onClick={() => deleteAccount.mutate({ portfolioId: portfolioId!, accountId: a.id })}
+              onClick={() => { if (confirm(`Delete account "${a.name}"? This cannot be undone.`)) deleteAccount.mutate({ portfolioId: portfolioId!, accountId: a.id }) }}
               className="text-sm text-red-500 hover:text-red-700 cursor-pointer"
             >
               Delete

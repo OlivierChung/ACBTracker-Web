@@ -488,7 +488,7 @@ export function AccountPage() {
                         Edit
                       </button>
                       <button
-                        onClick={() => deleteTransaction.mutate({ accountId: accountId!, transactionId: t.id })}
+                        onClick={() => { if (confirm(`Delete ${TX_TYPE_LABELS[t.type]} transaction for ${t.ticker ?? 'this security'} on ${t.tradeDate}? This cannot be undone.`)) deleteTransaction.mutate({ accountId: accountId!, transactionId: t.id }) }}
                         className="text-red-500 hover:text-red-700 text-xs cursor-pointer"
                       >
                         Delete
