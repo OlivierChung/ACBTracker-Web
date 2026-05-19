@@ -2,9 +2,11 @@ import { Link, Outlet, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import { version } from '../../package.json'
 import { Logo } from './Logo'
+import { useProfile } from '../hooks/useProfile'
 
 export function Layout() {
-  const { email, logout } = useAuthStore()
+  const { logout } = useAuthStore()
+  const { data: profile } = useProfile()
   const navigate = useNavigate()
 
   function handleLogout() {
@@ -24,8 +26,20 @@ export function Layout() {
           </Link>
         </div>
         <div className="flex items-center gap-4">
-          <Link to="/profile" className="text-sm text-gray-500 hover:text-gray-900">
-            {email}
+          {profile?.firstName && (
+            <span className="text-sm text-gray-600">
+              Hello, <span className="font-medium text-gray-900">{profile.firstName}</span>
+            </span>
+          )}
+          <Link
+            to="/profile"
+            title="Profile"
+            className="text-gray-400 hover:text-blue-600 transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="8" r="4"/>
+              <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+            </svg>
           </Link>
           <button
             onClick={handleLogout}
