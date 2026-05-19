@@ -8,6 +8,7 @@ import { PortfoliosPage } from './pages/PortfoliosPage'
 import { PortfolioPage } from './pages/PortfolioPage'
 import { AccountPage } from './pages/AccountPage'
 import { SecuritiesPage } from './pages/SecuritiesPage'
+import { ProfilePage } from './pages/ProfilePage'
 
 const queryClient = new QueryClient()
 
@@ -24,6 +25,7 @@ export default function App() {
               <Route path="/portfolios/:portfolioId" element={<PortfolioPage />} />
               <Route path="/portfolios/:portfolioId/accounts/:accountId" element={<AccountPage />} />
               <Route path="/securities" element={<SecuritiesPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

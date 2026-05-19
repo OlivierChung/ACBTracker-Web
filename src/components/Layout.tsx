@@ -22,7 +22,9 @@ export function Layout() {
           </Link>
         </div>
         <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-500">{email}</span>
+          <Link to="/profile" className="text-sm text-gray-500 hover:text-gray-900">
+            {email}
+          </Link>
           <button
             onClick={handleLogout}
             className="text-sm text-gray-600 hover:text-gray-900 cursor-pointer"
