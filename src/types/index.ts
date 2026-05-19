@@ -13,14 +13,15 @@ export interface Account {
   accountNumber: string | null
 }
 
-export enum AccountType {
-  Taxable = 0,
-  RRSP = 1,
-  TFSA = 2,
-  RESP = 3,
-  RRIF = 4,
-  FHSA = 5,
-}
+export const AccountType = {
+  Taxable: 0,
+  RRSP: 1,
+  TFSA: 2,
+  RESP: 3,
+  RRIF: 4,
+  FHSA: 5,
+} as const
+export type AccountType = (typeof AccountType)[keyof typeof AccountType]
 
 export interface Security {
   id: string
@@ -31,15 +32,16 @@ export interface Security {
   type: SecurityType
 }
 
-export enum SecurityType {
-  Stock = 0,
-  ETF = 1,
-  MutualFund = 2,
-  Bond = 3,
-  Option = 4,
-  Crypto = 5,
-  Other = 6,
-}
+export const SecurityType = {
+  Stock: 0,
+  ETF: 1,
+  MutualFund: 2,
+  Bond: 3,
+  Option: 4,
+  Crypto: 5,
+  Other: 6,
+} as const
+export type SecurityType = (typeof SecurityType)[keyof typeof SecurityType]
 
 export interface Holding {
   securityId: string
@@ -68,16 +70,17 @@ export interface Transaction {
   realizedGainLossCAD: number | null
 }
 
-export enum TransactionType {
-  Buy = 0,
-  Sell = 1,
-  DividendReinvestment = 2,
-  ReturnOfCapital = 3,
-  StockSplit = 4,
-  StockConsolidation = 5,
-  Transfer = 6,
-  SuperficialLossAdjustment = 7,
-}
+export const TransactionType = {
+  Buy: 0,
+  Sell: 1,
+  DividendReinvestment: 2,
+  ReturnOfCapital: 3,
+  StockSplit: 4,
+  StockConsolidation: 5,
+  Transfer: 6,
+  SuperficialLossAdjustment: 7,
+} as const
+export type TransactionType = (typeof TransactionType)[keyof typeof TransactionType]
 
 export interface ExchangeRate {
   from: string
