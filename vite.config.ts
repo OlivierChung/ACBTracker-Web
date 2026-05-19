@@ -6,8 +6,8 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     proxy: {
-      '/api': 'https://api.acbtracker.terralyx.com',
-      '/health': 'https://api.acbtracker.terralyx.com',
+      '/api': 'https://acbtracker-api.terralyx.com',
+      '/health': 'https://acbtracker-api.terralyx.com',
     },
   },
 })
