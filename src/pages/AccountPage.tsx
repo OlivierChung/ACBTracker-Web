@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
   useHoldings,
@@ -13,6 +13,9 @@ import type { Transaction } from '../types'
 import { useForm, useWatch } from 'react-hook-form'
 import { api } from '../lib/api'
 import type { Security } from '../types'
+
+type PriceMode = 'perShare' | 'total'
+type InputCurrency = 'native' | 'cad'
 
 const TX_TYPE_LABELS: Record<TransactionType, string> = {
   [TransactionType.Buy]: 'Buy',
@@ -53,16 +56,35 @@ export function AccountPage() {
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
   const [securityResults, setSecurityResults] = useState<Security[]>([])
   const [selectedSecurity, setSelectedSecurity] = useState<Security | null>(null)
+  const [priceMode, setPriceMode] = useState<PriceMode>('perShare')
+  const [inputCurrency, setInputCurrency] = useState<InputCurrency>('native')
 
   const { register, handleSubmit, setValue, control, reset } = useForm<TxFormValues>({
     defaultValues: { exchangeRate: '1', type: '0' },
   })
 
   const tradeDate = useWatch({ control, name: 'tradeDate' })
+  const priceInput = useWatch({ control, name: 'pricePerShare' })
+  const sharesInput = useWatch({ control, name: 'shares' })
+  const exchangeRateInput = useWatch({ control, name: 'exchangeRate' })
   const currency = selectedSecurity?.currency ?? 'CAD'
   const { data: fx } = useExchangeRate(currency, tradeDate, !!tradeDate && currency !== 'CAD')
 
   if (fx && currency !== 'CAD') setValue('exchangeRate', String(fx.rate))
+
+  const effectivePps = useMemo(() => {
+    const pps = Number(priceInput)
+    const shares = Number(sharesInput)
+    const exRate = Number(exchangeRateInput) || 1
+    if (!pps) return null
+    let result = pps
+    if (priceMode === 'total') {
+      if (!shares) return null
+      result = result / shares
+    }
+    if (inputCurrency === 'cad' && currency !== 'CAD') result = result / exRate
+    return result
+  }, [priceInput, sharesInput, exchangeRateInput, priceMode, inputCurrency, currency])
 
   async function searchSecurities(q: string) {
     if (!q) return setSecurityResults([])
@@ -81,6 +103,8 @@ export function AccountPage() {
   function openAddForm() {
     setEditingTransaction(null)
     setSelectedSecurity(null)
+    setPriceMode('perShare')
+    setInputCurrency('native')
     reset({ exchangeRate: '1', type: '0' })
     setShowForm(true)
   }
@@ -88,6 +112,8 @@ export function AccountPage() {
   function openEditForm(t: Transaction) {
     setEditingTransaction(t)
     setSelectedSecurity(null)
+    setPriceMode('perShare')
+    setInputCurrency('native')
     reset({
       securitySearch: t.ticker ?? t.securityId,
       securityId: t.securityId,
@@ -108,20 +134,31 @@ export function AccountPage() {
     setShowForm(false)
     setEditingTransaction(null)
     setSelectedSecurity(null)
+    setPriceMode('perShare')
+    setInputCurrency('native')
     reset({ exchangeRate: '1', type: '0' })
   }
 
   async function onSubmit(values: TxFormValues) {
+    const shares = Number(values.shares)
+    const exRate = Number(values.exchangeRate) || 1
+    let pps = Number(values.pricePerShare)
+    let fees = Number(values.fees) || 0
+    if (priceMode === 'total') pps = pps / shares
+    if (inputCurrency === 'cad' && currency !== 'CAD') {
+      pps = pps / exRate
+      fees = fees / exRate
+    }
     if (editingTransaction) {
       await updateTransaction.mutateAsync({
         accountId: accountId!,
         transactionId: editingTransaction.id,
         tradeDate: values.tradeDate,
         settlementDate: values.settlementDate,
-        shares: Number(values.shares),
-        pricePerShare: Number(values.pricePerShare),
-        fees: Number(values.fees) || 0,
-        exchangeRate: Number(values.exchangeRate),
+        shares,
+        pricePerShare: pps,
+        fees,
+        exchangeRate: exRate,
         notes: values.notes || undefined,
       })
     } else {
@@ -131,10 +168,10 @@ export function AccountPage() {
         type: Number(values.type) as TransactionType,
         tradeDate: values.tradeDate,
         settlementDate: values.settlementDate,
-        shares: Number(values.shares),
-        pricePerShare: Number(values.pricePerShare),
-        fees: Number(values.fees) || 0,
-        exchangeRate: Number(values.exchangeRate),
+        shares,
+        pricePerShare: pps,
+        fees,
+        exchangeRate: exRate,
         notes: values.notes || undefined,
       })
     }
@@ -288,19 +325,65 @@ export function AccountPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Price / share ({currency})
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-sm font-medium text-gray-700">
+                  {priceMode === 'perShare' ? 'Price / share' : 'Total price'}
+                  {' '}({inputCurrency === 'cad' ? 'CAD' : currency})
+                </label>
+                <div className="flex gap-1.5 text-xs">
+                  <div className="flex rounded border border-gray-300 overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => setPriceMode('perShare')}
+                      className={`px-2 py-0.5 cursor-pointer ${priceMode === 'perShare' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                    >
+                      /share
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPriceMode('total')}
+                      className={`px-2 py-0.5 cursor-pointer ${priceMode === 'total' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                    >
+                      total
+                    </button>
+                  </div>
+                  {currency !== 'CAD' && (
+                    <div className="flex rounded border border-gray-300 overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => setInputCurrency('native')}
+                        className={`px-2 py-0.5 cursor-pointer ${inputCurrency === 'native' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                      >
+                        {currency}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setInputCurrency('cad')}
+                        className={`px-2 py-0.5 cursor-pointer ${inputCurrency === 'cad' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                      >
+                        CAD
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
               <input
                 {...register('pricePerShare', { required: true })}
                 type="number"
                 step="any"
                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
+              {(priceMode === 'total' || inputCurrency === 'cad') && effectivePps != null && (
+                <p className="text-xs text-gray-500 mt-1">
+                  = {effectivePps.toFixed(6)} {currency}/share stored
+                </p>
+              )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Fees ({currency})</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Fees ({inputCurrency === 'cad' ? 'CAD' : currency})
+              </label>
               <input
                 {...register('fees')}
                 type="number"
