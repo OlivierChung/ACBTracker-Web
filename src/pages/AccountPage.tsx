@@ -456,6 +456,7 @@ export function AccountPage() {
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Date</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Security</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Type</th>
                 <th className="text-right px-4 py-3 font-medium text-gray-600">Shares</th>
                 <th className="text-right px-4 py-3 font-medium text-gray-600">Price</th>
@@ -468,7 +469,7 @@ export function AccountPage() {
             <tbody className="divide-y divide-gray-100">
               {transactions?.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-6 text-center text-gray-400">
+                  <td colSpan={9} className="px-4 py-6 text-center text-gray-400">
                     No transactions yet.
                   </td>
                 </tr>
@@ -479,6 +480,15 @@ export function AccountPage() {
                   className={`hover:bg-gray-50 ${editingTransaction?.id === t.id ? 'bg-blue-50' : ''}`}
                 >
                   <td className="px-4 py-3 text-gray-700">{t.tradeDate}</td>
+                  <td className="px-4 py-3">
+                    <span className="font-medium text-gray-900">{t.ticker ?? t.securityId}</span>
+                    {t.securityName && (
+                      <span className="block text-xs text-gray-500 leading-tight">{t.securityName}</span>
+                    )}
+                    {t.exchange && (
+                      <span className="text-xs text-gray-400">{t.exchange}</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-gray-700">{TX_TYPE_LABELS[t.type]}</td>
                   <td className="px-4 py-3 text-right text-gray-700">{NUM.format(t.shares)}</td>
                   <td className="px-4 py-3 text-right text-gray-700">{NUM.format(t.pricePerShare)}</td>

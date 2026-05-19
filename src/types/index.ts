@@ -91,6 +91,8 @@ export interface Transaction {
   id: string
   securityId: string
   ticker?: string
+  securityName?: string
+  exchange?: string
   type: TransactionType
   tradeDate: string
   settlementDate: string
