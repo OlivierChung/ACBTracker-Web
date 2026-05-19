@@ -8,6 +8,7 @@ export const keys = {
     securityId
       ? ['accounts', accountId, 'transactions', securityId]
       : ['accounts', accountId, 'transactions'],
+  securitiesList: ['securities'] as const,
   securities: (q: string) => ['securities', q] as const,
   exchangeRate: (from: string, date: string) => ['exchangeRate', from, date] as const,
 }
