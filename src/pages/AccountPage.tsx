@@ -486,7 +486,7 @@ export function AccountPage() {
                       <span className="block text-xs text-gray-500 leading-tight">{t.securityName}</span>
                     )}
                     {t.exchange && (
-                      <span className="text-[8px] text-gray-400 leading-tight uppercase tracking-wide">{t.exchange}</span>
+                      <span className="text-[10px] text-gray-400 leading-tight">{t.exchange}</span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-gray-700">{TX_TYPE_LABELS[t.type]}</td>
