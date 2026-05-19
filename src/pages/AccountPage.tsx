@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useConfirm } from '../components/ConfirmDialog'
 import {
@@ -14,6 +14,7 @@ import type { Transaction } from '../types'
 import { useForm, useWatch } from 'react-hook-form'
 import { api } from '../lib/api'
 import type { Security } from '../types'
+import { nextBusinessDay } from '../lib/businessDays'
 
 type PriceMode = 'perShare' | 'total'
 type InputCurrency = 'native' | 'cad'
@@ -73,6 +74,11 @@ export function AccountPage() {
   const { data: fx } = useExchangeRate(currency, tradeDate, !!tradeDate && currency !== 'CAD')
 
   if (fx && currency !== 'CAD') setValue('exchangeRate', String(fx.rate))
+
+  useEffect(() => {
+    if (editingTransaction || !tradeDate) return
+    setValue('settlementDate', nextBusinessDay(tradeDate, selectedSecurity?.exchange))
+  }, [tradeDate, editingTransaction, selectedSecurity?.exchange, setValue])
 
   const effectivePps = useMemo(() => {
     const pps = Number(priceInput)
