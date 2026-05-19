@@ -2,6 +2,41 @@ export interface Portfolio {
   id: string
   name: string
   description: string | null
+  accountCount: number
+  isDefault: boolean
+}
+
+export interface PortfolioDashboard {
+  portfolioId: string
+  portfolioName: string
+  holdings: PortfolioHolding[]
+  recentTransactions: PortfolioTransaction[]
+}
+
+export interface PortfolioHolding {
+  securityId: string
+  ticker: string
+  securityName: string
+  accountId: string
+  accountName: string
+  totalShares: number
+  acbPerShare: number
+  totalBookValueCAD: number
+}
+
+export interface PortfolioTransaction {
+  id: string
+  accountId: string
+  accountName: string
+  securityId: string
+  ticker: string
+  securityName: string
+  type: TransactionType
+  tradeDate: string
+  shares: number
+  pricePerShare: number
+  bookValueCAD: number
+  realizedGainLossCAD: number | null
 }
 
 export interface Account {
